@@ -1,6 +1,8 @@
 package name.mrkandreev.mapsmith.openaddressing;
 
+/** Hash functions for primitive {@code long} values. */
 public enum LongHashing {
+  /** MurmurHash3 finalizer. */
   MURMUR3_FINALIZER {
     @Override
     public long hash(long value) {
@@ -13,12 +15,14 @@ public enum LongHashing {
       return result;
     }
   },
+  /** Fibonacci hashing. */
   FIBONACCI {
     @Override
     public long hash(long value) {
       return value * 0x9e3779b97f4a7c15L;
     }
   },
+  /** Xor-shift hashing. */
   XOR_SHIFT {
     @Override
     public long hash(long value) {
@@ -29,6 +33,7 @@ public enum LongHashing {
       return result;
     }
   },
+  /** Identity hashing. */
   IDENTITY {
     @Override
     public long hash(long value) {
@@ -36,5 +41,11 @@ public enum LongHashing {
     }
   };
 
+  /**
+   * Hashes {@code value}.
+   *
+   * @param value value to hash
+   * @return hash value
+   */
   public abstract long hash(long value);
 }

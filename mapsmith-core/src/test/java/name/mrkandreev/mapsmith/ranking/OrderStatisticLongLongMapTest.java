@@ -2,6 +2,7 @@ package name.mrkandreev.mapsmith.ranking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -110,6 +111,24 @@ class OrderStatisticLongLongMapTest {
       assertThat(map.size()).isEqualTo(expected.size());
       assertRanks(map, expected);
     }
+  }
+
+  @Test
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+  void handlesDefensiveTreeCases() throws ReflectiveOperationException {
+    Class<?> nodeType = Class.forName(OrderStatisticLongLongMap.class.getName() + "$Node");
+    Method insert =
+        OrderStatisticLongLongMap.class.getDeclaredMethod(
+            "insert", nodeType, long.class, long.class);
+    Method delete =
+        OrderStatisticLongLongMap.class.getDeclaredMethod(
+            "delete", nodeType, long.class, long.class);
+    insert.setAccessible(true);
+    delete.setAccessible(true);
+
+    Object node = insert.invoke(null, null, 1L, 10L);
+    assertThat(insert.invoke(null, node, 1L, 10L)).isSameAs(node);
+    assertThat(delete.invoke(null, null, 1L, 20L)).isNull();
   }
 
   private static void assertRanks(LongLongRankingMap map, Map<Long, Long> expected) {

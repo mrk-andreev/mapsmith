@@ -1,6 +1,8 @@
 package name.mrkandreev.mapsmith.openaddressing;
 
+/** Supported open-addressing implementations. */
 public enum MapSpecialization {
+  /** Linear probing. */
   LINEAR_PROBING {
     @Override
     public LongLongOpenAddressingStrategy strategy() {
@@ -12,6 +14,7 @@ public enum MapSpecialization {
       return castObjectStrategy(LongObjectOpenAddressingStrategy.LINEAR_PROBING);
     }
   },
+  /** Robin Hood hashing. */
   ROBIN_HOOD {
     @Override
     public LongLongOpenAddressingStrategy strategy() {
@@ -23,6 +26,7 @@ public enum MapSpecialization {
       return castObjectStrategy(LongObjectOpenAddressingStrategy.ROBIN_HOOD);
     }
   },
+  /** Swiss table hashing. */
   SWISS_TABLE {
     @Override
     public LongLongOpenAddressingStrategy strategy() {
@@ -35,8 +39,18 @@ public enum MapSpecialization {
     }
   };
 
+  /**
+   * Returns the primitive map strategy.
+   *
+   * @return primitive map strategy
+   */
   public abstract LongLongOpenAddressingStrategy strategy();
 
+  /**
+   * Returns the object map strategy.
+   *
+   * @return object map strategy
+   */
   public abstract <T> LongObjectOpenAddressingStrategy<T> objectStrategy();
 
   @SuppressWarnings("unchecked")

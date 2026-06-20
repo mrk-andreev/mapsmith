@@ -1,7 +1,32 @@
+import java.math.BigDecimal
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+
 plugins {
   `java-library`
   alias(libs.plugins.maven.publish)
 }
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+  dependsOn(tasks.named("test"))
+  executionData(layout.buildDirectory.file("jacoco/test.exec"))
+
+  violationRules {
+    rule {
+      limit {
+        counter = "LINE"
+        value = "MISSEDCOUNT"
+        maximum = BigDecimal.ZERO
+      }
+      limit {
+        counter = "BRANCH"
+        value = "MISSEDCOUNT"
+        maximum = BigDecimal.ZERO
+      }
+    }
+  }
+}
+
+tasks.named("check") { dependsOn(tasks.named("jacocoTestCoverageVerification")) }
 
 mavenPublishing {
   coordinates(project.group.toString(), "mapsmith-core", project.version.toString())

@@ -5,6 +5,7 @@ import java.util.Objects;
 import name.mrkandreev.mapsmith.LongLongMap;
 import name.mrkandreev.mapsmith.openaddressing.LongHashing;
 
+/** A primitive long-to-long map using linear probing. */
 public final class LinearProbingLongLongMap implements LongLongMap {
   private static final byte EMPTY = 0;
   private static final byte OCCUPIED = 1;
@@ -19,18 +20,35 @@ public final class LinearProbingLongLongMap implements LongLongMap {
   private int used;
   private final LongHashing hashing;
 
+  /** Creates a map with default capacity and hashing. */
   public LinearProbingLongLongMap() {
     this(LongLongHashSupport.DEFAULT_EXPECTED_SIZE);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   */
   public LinearProbingLongLongMap(int expectedSize) {
     this(expectedSize, LongHashing.MURMUR3_FINALIZER);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param hashing hash function
+   */
   public LinearProbingLongLongMap(LongHashing hashing) {
     this(LongLongHashSupport.DEFAULT_EXPECTED_SIZE, hashing);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   * @param hashing hash function
+   */
   public LinearProbingLongLongMap(int expectedSize, LongHashing hashing) {
     this.hashing = Objects.requireNonNull(hashing, "hashing must not be null");
     allocate(LongLongHashSupport.capacityFor(expectedSize));

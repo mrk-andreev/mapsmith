@@ -143,7 +143,77 @@ class TreeLongLongRangeMapTest {
   }
 
   @Test
-  void rejectsInvalidRangesAndNullBoundTypes() {
+  void doesNotCoalesceAdjacentRangesWithDifferentValues() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
+    map.putCoalescing(0L, 0L, 1L);
+    map.putCoalescing(2L, 2L, 2L);
+    map.putCoalescing(1L, 1L, 1L);
+    assertThat(map.size()).isEqualTo(2);
+  }
+
+  @Test
+  void coalescesRangesAtMaximumLongValue() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
+    map.putCoalescing(Long.MAX_VALUE - 1L, Long.MAX_VALUE, 3L);
+    map.putCoalescing(Long.MAX_VALUE, Long.MAX_VALUE, 3L);
+    assertThat(map.get(Long.MAX_VALUE)).isEqualTo(3L);
+  }
+
+  @Test
+  void ignoresEmptyTypedRanges() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
+    map.putCoalescing(Long.MAX_VALUE, LongBoundType.OPEN, Long.MAX_VALUE, LongBoundType.CLOSED, 4L);
+    map.putCoalescing(Long.MIN_VALUE, LongBoundType.CLOSED, Long.MIN_VALUE, LongBoundType.OPEN, 4L);
+    map.remove(Long.MAX_VALUE, LongBoundType.OPEN, Long.MAX_VALUE, LongBoundType.CLOSED);
+    map.remove(Long.MIN_VALUE, LongBoundType.CLOSED, Long.MIN_VALUE, LongBoundType.OPEN);
+    assertThat(map.isEmpty()).isTrue();
+  }
+
+  @Test
+  void clearsRanges() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
+    map.put(0L, 1L, 1L);
+    map.clear();
+    assertThat(map.isEmpty()).isTrue();
+  }
+
+  @Test
+  void coalescesForwardAndRemovesTypedRanges() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
+    map.putCoalescing(2L, 2L, 1L);
+    map.putCoalescing(0L, 1L, 1L);
+    assertThat(map.size()).isEqualTo(1);
+    map.remove(0L, LongBoundType.OPEN, 2L, LongBoundType.OPEN);
+    assertThat(map.get(0L)).isEqualTo(1L);
+    assertThat(map.get(1L)).isZero();
+    assertThat(map.get(2L)).isEqualTo(1L);
+    assertThat(map.isEmpty()).isFalse();
+  }
+
+  @Test
+  void handlesNonTouchingEqualRangesAndEmptyTypedRemoval() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
+    map.putCoalescing(0L, 0L, 1L);
+    map.putCoalescing(2L, 2L, 1L);
+    assertThat(map.size()).isEqualTo(2);
+    map.clear();
+    map.putCoalescing(2L, 2L, 1L);
+    map.putCoalescing(0L, 0L, 1L);
+    assertThat(map.size()).isEqualTo(2);
+    map.remove(Long.MIN_VALUE, LongBoundType.CLOSED, Long.MIN_VALUE, LongBoundType.OPEN);
+    map.remove(0L, LongBoundType.CLOSED, 2L, LongBoundType.CLOSED);
+    map.remove(0L, LongBoundType.CLOSED, 2L, LongBoundType.OPEN);
+    map.remove(1L, LongBoundType.CLOSED, 1L, LongBoundType.OPEN);
+  }
+
+  @Test
+  void rejectsInvalidClosedRanges() {
     LongLongRangeMap map = new TreeLongLongRangeMap();
 
     assertThatThrownBy(() -> map.put(2L, 1L, 10L))
@@ -152,21 +222,33 @@ class TreeLongLongRangeMapTest {
     assertThatThrownBy(() -> map.remove(2L, 1L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("fromInclusive must be <= toInclusive");
+  }
+
+  @Test
+  void rejectsNullBoundTypes() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
     assertThatThrownBy(() -> map.put(1L, null, 2L, LongBoundType.CLOSED, 10L))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("lowerType must not be null");
     assertThatThrownBy(() -> map.putCoalescing(1L, LongBoundType.CLOSED, 2L, null, 10L))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("upperType must not be null");
+    assertThatThrownBy(() -> map.remove(1L, null, 2L, LongBoundType.CLOSED))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("lowerType must not be null");
+  }
+
+  @Test
+  void rejectsInvalidTypedRanges() {
+    LongLongRangeMap map = new TreeLongLongRangeMap();
+
     assertThatThrownBy(() -> map.remove(1L, LongBoundType.OPEN, 1L, LongBoundType.OPEN))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("open range endpoints must be different");
     assertThatThrownBy(() -> map.remove(2L, LongBoundType.CLOSED, 1L, LongBoundType.CLOSED))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("lower must be <= upper");
-    assertThatThrownBy(() -> map.remove(1L, null, 2L, LongBoundType.CLOSED))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("lowerType must not be null");
   }
 
   @Test

@@ -4,6 +4,8 @@ errorprone = "2.50.0"
 errorprone-plugin = "5.1.0"
 jacoco = "0.8.15"
 jmh = "1.37"
+# Keep this version fixed pending an explicit security review of newer jqwik releases.
+jqwik = { strictly = "1.9.3" }
 junit = "6.0.0"
 ktfmt = "0.61"
 maven-publish = "0.36.0"
@@ -16,6 +18,7 @@ assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
