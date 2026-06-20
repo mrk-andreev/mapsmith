@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mapsmith benchmark viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --background: #f7f8fa;
+        --surface: #ffffff;
+        --surface-muted: #eef1f5;
+        --border: #d5dbe3;
+        --text: #18202b;
+        --muted: #5f6b7a;
+        --accent: #116d6e;
+        --danger: #a33a2b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--text);
+        font:
+          14px/1.45 system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      header {
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      main,
+      .header-inner {
+        width: min(1400px, calc(100vw - 32px));
+        margin: 0 auto;
+      }
+
+      .header-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 64px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      h2 {
+        font-size: 16px;
+        font-weight: 650;
+      }
+
+      main {
+        padding: 24px 0 40px;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(360px, 0.95fr) minmax(0, 1.65fr);
+        gap: 20px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .panel-header,
+      .panel-body {
+        padding: 16px;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      textarea {
+        display: block;
+        width: 100%;
+        min-height: 520px;
+        resize: vertical;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        color: var(--text);
+        background: #fbfcfd;
+        font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      textarea:focus,
+      select:focus,
+      button:focus-visible {
+        outline: 2px solid color-mix(in srgb, var(--accent) 70%, white);
+        outline-offset: 2px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      select {
+        height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0 10px;
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      button {
+        height: 36px;
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        padding: 0 14px;
+        color: white;
+        background: var(--accent);
+        font-weight: 650;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        border-color: var(--border);
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .status {
+        min-height: 20px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .metric {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        background: var(--surface);
+      }
+
+      .metric .label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .metric .value {
+        margin-top: 4px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .charts {
+        display: grid;
+        gap: 20px;
+      }
+
+      .chart-panel {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .chart-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .chart-title span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .chart-box {
+        position: relative;
+        min-height: 360px;
+        padding: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface);
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--border);
+        padding: 8px 10px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      th:first-child,
+      td:first-child {
+        text-align: left;
+      }
+
+      th {
+        color: var(--muted);
+        background: var(--surface-muted);
+        font-size: 12px;
+      }
+
+      .table-wrap {
+        max-height: 420px;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+
+      @media (max-width: 920px) {
+        .workspace,
+        .summary {
+          grid-template-columns: 1fr;
+        }
+
+        textarea {
+          min-height: 340px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <h1>mapsmith benchmark viewer</h1>
+        <button class="secondary" id="loadExampleButton" type="button">Load example</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="workspace">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>JMH output</h2>
+          </div>
+          <div class="panel-body">
+            <textarea
+              id="input"
+              spellcheck="false"
+              placeholder="Paste JMH text output here. Rows like:
+LongLongMapBenchmark.getExisting  SWISS_TABLE_FIBONACCI  100000  thrpt  10  4641.703 +/- 244.405  ops/s"></textarea>
+
+            <div class="controls">
+              <label>
+                Benchmark
+                <select id="benchmarkFilter"></select>
+              </label>
+              <label>
+                Size
+                <select id="sizeFilter"></select>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button id="parseButton" type="button">Parse output</button>
+              <button class="secondary" id="clearButton" type="button">Clear</button>
+            </div>
+            <div class="status" id="status"></div>
+          </div>
+        </section>
+
+        <section>
+          <div class="summary" id="summary"></div>
+          <div class="charts" id="charts"></div>
+          <div class="table-wrap" id="tableWrap" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th>Benchmark</th>
+                  <th>Map kind</th>
+                  <th>Size</th>
+                  <th>Score</th>
+                  <th>Error</th>
+                  <th>Units</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const input = document.getElementById("input");
+      const parseButton = document.getElementById("parseButton");
+      const clearButton = document.getElementById("clearButton");
+      const loadExampleButton = document.getElementById("loadExampleButton");
+      const benchmarkFilter = document.getElementById("benchmarkFilter");
+      const sizeFilter = document.getElementById("sizeFilter");
+      const status = document.getElementById("status");
+      const summary = document.getElementById("summary");
+      const charts = document.getElementById("charts");
+      const tableBody = document.getElementById("tableBody");
+      const tableWrap = document.getElementById("tableWrap");
+
+      const chartInstances = [];
+      let rows = [];
+
+      const exampleOutput = `Benchmark                                                (mapKind)  (size)   Mode  Cnt       Score       Error  Units
+LongLongMapBenchmark.getExisting  LINEAR_PROBING_MURMUR3_FINALIZER    1000  thrpt   10  647570.987 +/-  7922.800  ops/s
+LongLongMapBenchmark.getExisting          LINEAR_PROBING_FIBONACCI    1000  thrpt   10  816294.643 +/- 12402.125  ops/s
+LongLongMapBenchmark.getExisting               ROBIN_HOOD_IDENTITY    1000  thrpt   10  942967.963 +/-  6203.312  ops/s
+LongLongMapBenchmark.getExisting              SWISS_TABLE_IDENTITY    1000  thrpt   10  821909.278 +/-  7632.234  ops/s
+LongLongMapBenchmark.getExisting                          HASH_MAP    1000  thrpt   10  444449.594 +/- 16838.833  ops/s
+LongLongMapBenchmark.putAll       LINEAR_PROBING_MURMUR3_FINALIZER  100000  thrpt   10    3267.017 +/-    45.871  ops/s
+LongLongMapBenchmark.putAll                LINEAR_PROBING_IDENTITY  100000  thrpt   10    3536.897 +/-    39.149  ops/s
+LongLongMapBenchmark.putAll                    ROBIN_HOOD_IDENTITY  100000  thrpt   10    2333.448 +/-    92.305  ops/s
+LongLongMapBenchmark.putAll                   SWISS_TABLE_IDENTITY  100000  thrpt   10    3421.767 +/-   149.698  ops/s
+LongLongMapBenchmark.putAll                               HASH_MAP  100000  thrpt   10     839.966 +/-     9.800  ops/s`;
+
+      function parseJmhOutput(text) {
+        const parsed = [];
+        const rowPattern =
+          /^(?<benchmark>\S+)\s+(?<mapKind>[A-Z0-9_]+)\s+(?<size>\d+)\s+(?<mode>\S+)\s+(?<count>\d+)\s+(?<score>[-+]?\d+(?:\.\d+)?)\s+(?:\+\/-|\\u00b1)\s+(?<error>[-+]?\d+(?:\.\d+)?)\s+(?<units>\S+)$/;
+
+        for (const rawLine of text.split(/\r?\n/)) {
+          const line = rawLine.trim();
+          if (!line || line.startsWith("Benchmark ")) {
+            continue;
+          }
+
+          const match = rowPattern.exec(line.replace(/\u00b1/g, "+/-"));
+          if (!match) {
+            continue;
+          }
+
+          const benchmarkParts = match.groups.benchmark.split(".");
+          parsed.push({
+            benchmark: benchmarkParts.at(-1),
+            benchmarkClass: benchmarkParts.slice(0, -1).join("."),
+            mapKind: match.groups.mapKind,
+            size: Number(match.groups.size),
+            mode: match.groups.mode,
+            count: Number(match.groups.count),
+            score: Number(match.groups.score),
+            error: Number(match.groups.error),
+            units: match.groups.units,
+          });
+        }
+
+        return parsed;
+      }
+
+      function updateFilters() {
+        const benchmarks = unique(rows.map((row) => row.benchmark)).sort();
+        const sizes = unique(rows.map((row) => row.size)).sort((left, right) => left - right);
+        populateSelect(benchmarkFilter, ["All", ...benchmarks]);
+        populateSelect(sizeFilter, ["All", ...sizes.map(String)]);
+      }
+
+      function populateSelect(select, values) {
+        const current = select.value;
+        select.replaceChildren(
+          ...values.map((value) => {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            return option;
+          }),
+        );
+        if (values.includes(current)) {
+          select.value = current;
+        }
+      }
+
+      function unique(values) {
+        return [...new Set(values)];
+      }
+
+      function filteredRows() {
+        return rows.filter((row) => {
+          const benchmarkMatches =
+            benchmarkFilter.value === "All" || row.benchmark === benchmarkFilter.value;
+          const sizeMatches = sizeFilter.value === "All" || row.size === Number(sizeFilter.value);
+          return benchmarkMatches && sizeMatches;
+        });
+      }
+
+      function render() {
+        destroyCharts();
+        const visibleRows = filteredRows();
+
+        renderSummary(visibleRows);
+        renderTable(visibleRows);
+        renderCharts(visibleRows);
+      }
+
+      function renderSummary(visibleRows) {
+        const best = visibleRows.reduce(
+          (winner, row) => (!winner || row.score > winner.score ? row : winner),
+          null,
+        );
+        summary.replaceChildren(
+          metric("Rows", visibleRows.length),
+          metric("Benchmarks", unique(visibleRows.map((row) => row.benchmark)).length),
+          metric("Map kinds", unique(visibleRows.map((row) => row.mapKind)).length),
+          metric("Best score", best ? `${formatNumber(best.score)} ${best.units}` : "-"),
+        );
+      }
+
+      function metric(label, value) {
+        const item = document.createElement("div");
+        item.className = "metric";
+        item.innerHTML = `<div class="label"></div><div class="value"></div>`;
+        item.querySelector(".label").textContent = label;
+        item.querySelector(".value").textContent = value;
+        return item;
+      }
+
+      function renderTable(visibleRows) {
+        tableWrap.hidden = visibleRows.length === 0;
+        tableBody.replaceChildren(
+          ...visibleRows
+            .slice()
+            .sort(compareRows)
+            .map((row) => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              `;
+              const cells = tr.querySelectorAll("td");
+              cells[0].textContent = row.benchmark;
+              cells[1].textContent = row.mapKind;
+              cells[2].textContent = row.size;
+              cells[3].textContent = formatNumber(row.score);
+              cells[4].textContent = formatNumber(row.error);
+              cells[5].textContent = row.units;
+              return tr;
+            }),
+        );
+      }
+
+      function renderCharts(visibleRows) {
+        charts.replaceChildren();
+        const groups = groupBy(visibleRows, (row) => `${row.benchmark}|${row.size}`);
+
+        for (const [key, groupRows] of [...groups.entries()].sort()) {
+          const [benchmark, size] = key.split("|");
+          const panel = document.createElement("article");
+          panel.className = "chart-panel";
+          panel.innerHTML = `
+            <div class="chart-title">
+              <h2></h2>
+              <span></span>
+            </div>
+            <div class="chart-box">
+              <canvas></canvas>
+            </div>
+          `;
+          panel.querySelector("h2").textContent = benchmark;
+          panel.querySelector("span").textContent = `size ${size}`;
+          charts.appendChild(panel);
+
+          const sortedRows = groupRows.slice().sort((left, right) => right.score - left.score);
+          const canvas = panel.querySelector("canvas");
+          const chart = new Chart(canvas, {
+            type: "bar",
+            data: {
+              labels: sortedRows.map((row) => row.mapKind),
+              datasets: [
+                {
+                  label: sortedRows[0]?.units ?? "score",
+                  data: sortedRows.map((row) => row.score),
+                  backgroundColor: sortedRows.map((row) => colorFor(row.mapKind)),
+                  borderColor: sortedRows.map((row) => colorFor(row.mapKind, 0.95)),
+                  borderWidth: 1,
+                },
+                {
+                  type: "line",
+                  label: "error",
+                  data: sortedRows.map((row) => row.score + row.error),
+                  pointRadius: 2,
+                  borderColor: "#a33a2b",
+                  backgroundColor: "#a33a2b",
+                  borderWidth: 1,
+                  tension: 0,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                },
+                tooltip: {
+                  callbacks: {
+                    label(context) {
+                      const row = sortedRows[context.dataIndex];
+                      if (context.dataset.type === "line") {
+                        return `error: +/- ${formatNumber(row.error)} ${row.units}`;
+                      }
+                      return `score: ${formatNumber(row.score)} ${row.units}`;
+                    },
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  ticks: {
+                    maxRotation: 55,
+                    minRotation: 25,
+                  },
+                },
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: sortedRows[0]?.units ?? "score",
+                  },
+                },
+              },
+            },
+          });
+          chartInstances.push(chart);
+        }
+      }
+
+      function groupBy(values, keyFn) {
+        const groups = new Map();
+        for (const value of values) {
+          const key = keyFn(value);
+          if (!groups.has(key)) {
+            groups.set(key, []);
+          }
+          groups.get(key).push(value);
+        }
+        return groups;
+      }
+
+      function compareRows(left, right) {
+        return (
+          left.benchmark.localeCompare(right.benchmark) ||
+          left.size - right.size ||
+          right.score - left.score ||
+          left.mapKind.localeCompare(right.mapKind)
+        );
+      }
+
+      function colorFor(mapKind, alpha = 0.8) {
+        const palette = {
+          LINEAR_PROBING: `rgba(17, 109, 110, ${alpha})`,
+          ROBIN_HOOD: `rgba(83, 89, 201, ${alpha})`,
+          SWISS_TABLE: `rgba(190, 105, 31, ${alpha})`,
+          HASH_MAP: `rgba(95, 107, 122, ${alpha})`,
+        };
+        return (
+          Object.entries(palette).find(([prefix]) => mapKind.startsWith(prefix))?.[1] ??
+          `rgba(36, 113, 163, ${alpha})`
+        );
+      }
+
+      function formatNumber(value) {
+        return Number(value).toLocaleString(undefined, {
+          maximumFractionDigits: 3,
+        });
+      }
+
+      function destroyCharts() {
+        while (chartInstances.length > 0) {
+          chartInstances.pop().destroy();
+        }
+      }
+
+      function parseAndRender() {
+        rows = parseJmhOutput(input.value);
+        status.classList.toggle("error", rows.length === 0);
+        status.textContent =
+          rows.length === 0
+            ? "No benchmark rows found."
+            : `Parsed ${rows.length} benchmark rows.`;
+        updateFilters();
+        render();
+      }
+
+      parseButton.addEventListener("click", parseAndRender);
+      benchmarkFilter.addEventListener("change", render);
+      sizeFilter.addEventListener("change", render);
+      clearButton.addEventListener("click", () => {
+        input.value = "";
+        rows = [];
+        updateFilters();
+        render();
+        status.textContent = "";
+      });
+      loadExampleButton.addEventListener("click", () => {
+        input.value = exampleOutput;
+        parseAndRender();
+      });
+
+      updateFilters();
+      render();
+    </script>
+  </body>
+</html>
