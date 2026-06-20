@@ -9,6 +9,9 @@ import java.util.SplittableRandom;
 import org.junit.jupiter.api.Test;
 
 class TreeLongObjectRangeMapTest {
+  private static final String LEFT_VALUE = "left";
+  private static final String MIDDLE_VALUE = "middle";
+  private static final String RIGHT_VALUE = "right";
   private static final String SAME_VALUE = "same";
   private static final String STORED_VALUE = "value";
 
@@ -40,16 +43,16 @@ class TreeLongObjectRangeMapTest {
   @Test
   void rangePutOverwritesAndSplitsOverlaps() {
     LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
-    map.put(0L, 9L, "left");
-    map.put(20L, 29L, "right");
+    map.put(0L, 9L, LEFT_VALUE);
+    map.put(20L, 29L, RIGHT_VALUE);
 
-    map.put(5L, 24L, "middle");
+    map.put(5L, 24L, MIDDLE_VALUE);
 
     assertThat(map.size()).isEqualTo(3);
-    assertThat(map.get(4L)).isEqualTo("left");
-    assertThat(map.get(5L)).isEqualTo("middle");
-    assertThat(map.get(24L)).isEqualTo("middle");
-    assertThat(map.get(25L)).isEqualTo("right");
+    assertThat(map.get(4L)).isEqualTo(LEFT_VALUE);
+    assertThat(map.get(5L)).isEqualTo(MIDDLE_VALUE);
+    assertThat(map.get(24L)).isEqualTo(MIDDLE_VALUE);
+    assertThat(map.get(25L)).isEqualTo(RIGHT_VALUE);
   }
 
   @Test
@@ -110,7 +113,7 @@ class TreeLongObjectRangeMapTest {
   }
 
   @Test
-  void rejectsInvalidRangesAndNullBoundTypes() {
+  void rejectsInvalidClosedRanges() {
     LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
 
     assertThatThrownBy(() -> map.put(2L, 1L, STORED_VALUE))
@@ -119,15 +122,103 @@ class TreeLongObjectRangeMapTest {
     assertThatThrownBy(() -> map.remove(2L, 1L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("fromInclusive must be <= toInclusive");
+  }
+
+  @Test
+  void rejectsNullBoundTypes() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
     assertThatThrownBy(() -> map.put(1L, null, 2L, LongBoundType.CLOSED, STORED_VALUE))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("lowerType must not be null");
     assertThatThrownBy(() -> map.putCoalescing(1L, LongBoundType.CLOSED, 2L, null, STORED_VALUE))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("upperType must not be null");
+  }
+
+  @Test
+  void rejectsInvalidTypedRanges() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
     assertThatThrownBy(() -> map.remove(1L, LongBoundType.OPEN, 1L, LongBoundType.OPEN))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("open range endpoints must be different");
+    assertThatThrownBy(() -> map.remove(2L, LongBoundType.CLOSED, 1L, LongBoundType.CLOSED))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("lower must be <= upper");
+  }
+
+  @Test
+  void doesNotCoalesceAdjacentRangesWithDifferentValues() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
+    map.putCoalescing(0L, 0L, "left");
+    map.putCoalescing(2L, 2L, "right");
+    map.putCoalescing(1L, 1L, "left");
+    assertThat(map.size()).isEqualTo(2);
+  }
+
+  @Test
+  void coalescesRangesAtMaximumLongValue() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
+    map.putCoalescing(Long.MAX_VALUE - 1L, Long.MAX_VALUE, "edge");
+    map.putCoalescing(Long.MAX_VALUE, Long.MAX_VALUE, "edge");
+    assertThat(map.get(Long.MAX_VALUE)).isEqualTo("edge");
+  }
+
+  @Test
+  void ignoresEmptyTypedRanges() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
+    map.putCoalescing(
+        Long.MAX_VALUE, LongBoundType.OPEN, Long.MAX_VALUE, LongBoundType.CLOSED, "none");
+    map.putCoalescing(
+        Long.MIN_VALUE, LongBoundType.CLOSED, Long.MIN_VALUE, LongBoundType.OPEN, "none");
+    map.remove(Long.MAX_VALUE, LongBoundType.OPEN, Long.MAX_VALUE, LongBoundType.CLOSED);
+    map.remove(Long.MIN_VALUE, LongBoundType.CLOSED, Long.MIN_VALUE, LongBoundType.OPEN);
+    assertThat(map.isEmpty()).isTrue();
+  }
+
+  @Test
+  void clearsRanges() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
+    map.put(0L, 1L, STORED_VALUE);
+    map.clear();
+    assertThat(map.isEmpty()).isTrue();
+  }
+
+  @Test
+  void coalescesForwardAndRemovesTypedRanges() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
+    map.putCoalescing(2L, 2L, STORED_VALUE);
+    map.putCoalescing(0L, 1L, STORED_VALUE);
+    assertThat(map.size()).isEqualTo(1);
+    map.remove(0L, LongBoundType.OPEN, 2L, LongBoundType.OPEN);
+    assertThat(map.get(0L)).isEqualTo(STORED_VALUE);
+    assertThat(map.get(1L)).isNull();
+    assertThat(map.get(2L)).isEqualTo(STORED_VALUE);
+    assertThat(map.isEmpty()).isFalse();
+  }
+
+  @Test
+  void handlesNonTouchingEqualRangesAndEmptyTypedRemoval() {
+    LongObjectRangeMap<String> map = new TreeLongObjectRangeMap<>();
+
+    map.putCoalescing(0L, 0L, STORED_VALUE);
+    map.putCoalescing(2L, 2L, STORED_VALUE);
+    assertThat(map.size()).isEqualTo(2);
+    map.clear();
+    map.putCoalescing(2L, 2L, STORED_VALUE);
+    map.putCoalescing(0L, 0L, STORED_VALUE);
+    assertThat(map.size()).isEqualTo(2);
+    map.put(1L, LongBoundType.CLOSED, 1L, LongBoundType.OPEN, STORED_VALUE);
+    map.remove(Long.MIN_VALUE, LongBoundType.CLOSED, Long.MIN_VALUE, LongBoundType.OPEN);
+    map.remove(0L, LongBoundType.CLOSED, 2L, LongBoundType.CLOSED);
+    map.remove(0L, LongBoundType.CLOSED, 2L, LongBoundType.OPEN);
+    map.remove(1L, LongBoundType.CLOSED, 1L, LongBoundType.OPEN);
   }
 
   @Test

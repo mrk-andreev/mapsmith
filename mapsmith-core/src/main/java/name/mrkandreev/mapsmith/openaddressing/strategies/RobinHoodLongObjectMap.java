@@ -5,6 +5,7 @@ import java.util.Objects;
 import name.mrkandreev.mapsmith.LongObjectMap;
 import name.mrkandreev.mapsmith.openaddressing.LongHashing;
 
+/** A primitive long-to-object map using Robin Hood hashing. */
 public final class RobinHoodLongObjectMap<T> implements LongObjectMap<T> {
   private static final byte EMPTY = 0;
   private static final byte OCCUPIED = 1;
@@ -17,18 +18,35 @@ public final class RobinHoodLongObjectMap<T> implements LongObjectMap<T> {
   private int entryCount;
   private final LongHashing hashing;
 
+  /** Creates a map with default capacity and hashing. */
   public RobinHoodLongObjectMap() {
     this(LongLongHashSupport.DEFAULT_EXPECTED_SIZE);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   */
   public RobinHoodLongObjectMap(int expectedSize) {
     this(expectedSize, LongHashing.MURMUR3_FINALIZER);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param hashing hash function
+   */
   public RobinHoodLongObjectMap(LongHashing hashing) {
     this(LongLongHashSupport.DEFAULT_EXPECTED_SIZE, hashing);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   * @param hashing hash function
+   */
   public RobinHoodLongObjectMap(int expectedSize, LongHashing hashing) {
     this.hashing = Objects.requireNonNull(hashing, "hashing must not be null");
     allocate(LongLongHashSupport.capacityFor(expectedSize));

@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+/** A tree-backed primitive long-to-object range map. */
 public final class TreeLongObjectRangeMap<T> implements LongObjectRangeMap<T> {
   private final TreeMap<Long, Range<T>> ranges = new TreeMap<>();
 
@@ -185,7 +186,7 @@ public final class TreeLongObjectRangeMap<T> implements LongObjectRangeMap<T> {
     }
 
     Range<T> previous = previousEntry.getValue();
-    if (!Objects.equals(previous.value, range.value) || !touches(previous.to, range.from)) {
+    if (!Objects.equals(previous.value, range.value) || areSeparated(previous.to, range.from)) {
       return range;
     }
 
@@ -198,7 +199,7 @@ public final class TreeLongObjectRangeMap<T> implements LongObjectRangeMap<T> {
     Map.Entry<Long, Range<T>> nextEntry = ranges.ceilingEntry(result.from);
     while (nextEntry != null) {
       Range<T> next = nextEntry.getValue();
-      if (!Objects.equals(next.value, result.value) || !touches(result.to, next.from)) {
+      if (!Objects.equals(next.value, result.value) || areSeparated(result.to, next.from)) {
         return result;
       }
 
@@ -209,8 +210,8 @@ public final class TreeLongObjectRangeMap<T> implements LongObjectRangeMap<T> {
     return result;
   }
 
-  private static boolean touches(long leftTo, long rightFrom) {
-    return leftTo == Long.MAX_VALUE || leftTo + 1L >= rightFrom;
+  private static boolean areSeparated(long leftTo, long rightFrom) {
+    return leftTo < rightFrom - 1L;
   }
 
   private static void validateTypedRange(

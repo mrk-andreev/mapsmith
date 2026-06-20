@@ -3,16 +3,23 @@ package name.mrkandreev.mapsmith.ranking;
 import name.mrkandreev.mapsmith.LongLongMap;
 import name.mrkandreev.mapsmith.openaddressing.LongLongOpenAddressMap;
 
+/** A primitive map that ranks entries by value. */
 public final class OrderStatisticLongLongMap implements LongLongRankingMap {
   private static final int MAX_BALANCE_DELTA = 1;
 
   private final LongLongMap scoreByKey;
   private Node root;
 
+  /** Creates a map with default capacity. */
   public OrderStatisticLongLongMap() {
     this(LongLongOpenAddressMap.DEFAULT_EXPECTED_SIZE);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   */
   public OrderStatisticLongLongMap(int expectedSize) {
     scoreByKey = new LongLongOpenAddressMap(expectedSize);
   }

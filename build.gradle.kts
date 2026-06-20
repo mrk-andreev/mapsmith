@@ -1,3 +1,6 @@
+import net.ltgt.gradle.errorprone.errorprone
+import org.gradle.external.javadoc.StandardJavadocDocletOptions
+
 plugins {
   alias(libs.plugins.spotless)
   alias(libs.plugins.spotbugs) apply false
@@ -51,6 +54,14 @@ subprojects {
 
     extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
       java {
+        // google-java-format only recognizes block tags at the start of a Javadoc line, so
+        // normalize
+        // hand-written Javadoc before formatting it.
+        replaceRegex(
+            "separate Javadoc block tags",
+            "(?<!\\*) (?=@(?:author|deprecated|exception|param|return|see|serial|serialData|serialField|since|throws|version)\\b)",
+            "\n * ",
+        )
         googleJavaFormat()
         removeUnusedImports()
         trimTrailingWhitespace()
@@ -70,11 +81,19 @@ subprojects {
       add("testImplementation", platform(libs.junit.bom))
       add("testImplementation", libs.junit.jupiter)
       add("testImplementation", libs.assertj.core)
+      add("testImplementation", libs.jqwik)
       add("testRuntimeOnly", libs.junit.platform.launcher)
     }
 
     tasks.withType<JavaCompile>().configureEach {
+      options.compilerArgs.add("-Xlint:all")
       options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
+      options.errorprone.disable("ThreadPriorityCheck")
+    }
+
+    tasks.withType<Javadoc>().configureEach {
+      (options as StandardJavadocDocletOptions).addBooleanOption("Werror", true)
+      (options as StandardJavadocDocletOptions).addBooleanOption("Xdoclint:all,-missing", true)
     }
 
     tasks.withType<Test>().configureEach {

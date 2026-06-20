@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+/** A tree-backed primitive long-to-long range map. */
 public final class TreeLongLongRangeMap implements LongLongRangeMap {
   private final TreeMap<Long, Range> ranges = new TreeMap<>();
 
@@ -185,7 +186,7 @@ public final class TreeLongLongRangeMap implements LongLongRangeMap {
     }
 
     Range previous = previousEntry.getValue();
-    if (previous.value != range.value || !touches(previous.to, range.from)) {
+    if (previous.value != range.value || areSeparated(previous.to, range.from)) {
       return range;
     }
 
@@ -198,7 +199,7 @@ public final class TreeLongLongRangeMap implements LongLongRangeMap {
     Map.Entry<Long, Range> nextEntry = ranges.ceilingEntry(result.from);
     while (nextEntry != null) {
       Range next = nextEntry.getValue();
-      if (next.value != result.value || !touches(result.to, next.from)) {
+      if (next.value != result.value || areSeparated(result.to, next.from)) {
         return result;
       }
 
@@ -209,8 +210,8 @@ public final class TreeLongLongRangeMap implements LongLongRangeMap {
     return result;
   }
 
-  private static boolean touches(long leftTo, long rightFrom) {
-    return leftTo == Long.MAX_VALUE || leftTo + 1L >= rightFrom;
+  private static boolean areSeparated(long leftTo, long rightFrom) {
+    return leftTo < rightFrom - 1L;
   }
 
   private static void validateTypedRange(

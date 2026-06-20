@@ -3,32 +3,64 @@ package name.mrkandreev.mapsmith.openaddressing;
 import java.util.Objects;
 import name.mrkandreev.mapsmith.LongObjectMap;
 
+/** A configurable primitive long-to-object open-addressing map. */
 public final class LongObjectOpenAddressMap<T> implements LongObjectMap<T> {
+  /** Default expected entry count. */
   public static final int DEFAULT_EXPECTED_SIZE = 16;
 
   private final LongObjectMap<T> delegate;
 
+  /** Creates a map with the default strategy and capacity. */
   public LongObjectOpenAddressMap() {
     this(defaultStrategy());
   }
 
+  /**
+   * Creates a map with the default strategy.
+   *
+   * @param expectedSize expected entry count
+   */
   public LongObjectOpenAddressMap(int expectedSize) {
     this(defaultStrategy(), expectedSize);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param strategy strategy to use
+   */
   public LongObjectOpenAddressMap(LongObjectOpenAddressingStrategy<T> strategy) {
     this(strategy, DEFAULT_EXPECTED_SIZE);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param strategy strategy to use
+   * @param expectedSize expected entry count
+   */
   public LongObjectOpenAddressMap(LongObjectOpenAddressingStrategy<T> strategy, int expectedSize) {
     this(strategy, expectedSize, LongHashing.MURMUR3_FINALIZER);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param strategy strategy to use
+   * @param hashing hash function
+   */
   public LongObjectOpenAddressMap(
       LongObjectOpenAddressingStrategy<T> strategy, LongHashing hashing) {
     this(strategy, DEFAULT_EXPECTED_SIZE, hashing);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param strategy strategy to use
+   * @param expectedSize expected entry count
+   * @param hashing hash function
+   */
   public LongObjectOpenAddressMap(
       LongObjectOpenAddressingStrategy<T> strategy, int expectedSize, LongHashing hashing) {
     Objects.requireNonNull(strategy, "strategy must not be null");

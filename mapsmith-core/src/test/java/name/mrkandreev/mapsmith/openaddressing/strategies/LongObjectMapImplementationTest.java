@@ -12,12 +12,16 @@ import java.util.stream.Stream;
 import name.mrkandreev.mapsmith.LongObjectMap;
 import name.mrkandreev.mapsmith.openaddressing.LongHashing;
 import name.mrkandreev.mapsmith.openaddressing.LongObjectOpenAddressMap;
+import name.mrkandreev.mapsmith.openaddressing.LongObjectOpenAddressingStrategy;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class LongObjectMapImplementationTest {
   private static final String MAP_IMPLEMENTATIONS = "mapImplementations";
+  private static final String HASHING_METHOD_SOURCE = "hashings";
   private static final String VALUE_PREFIX = "value-";
 
   @ParameterizedTest
@@ -144,6 +148,69 @@ class LongObjectMapImplementationTest {
     assertThat(map.containsKey(2L)).isFalse();
   }
 
+  @Nested
+  class LinearProbingConstructors {
+    @Test
+    void createsMapWithDefaultExpectedSize() {
+      assertThat(new LinearProbingLongObjectMap<String>()).isNotNull();
+    }
+
+    @Test
+    void createsMapWithSpecifiedExpectedSize() {
+      assertThat(new LinearProbingLongObjectMap<String>(1)).isNotNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource(
+        "name.mrkandreev.mapsmith.openaddressing.strategies.LongObjectMapImplementationTest#hashings")
+    void createsMapWithSpecifiedHashing(LongHashing hashing) {
+      assertThat(new LinearProbingLongObjectMap<String>(hashing)).isNotNull();
+    }
+  }
+
+  @Nested
+  class RobinHoodConstructors {
+    @Test
+    void createsMapWithDefaultExpectedSize() {
+      assertThat(new RobinHoodLongObjectMap<String>()).isNotNull();
+    }
+
+    @Test
+    void createsMapWithSpecifiedExpectedSize() {
+      assertThat(new RobinHoodLongObjectMap<String>(1)).isNotNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource(
+        "name.mrkandreev.mapsmith.openaddressing.strategies.LongObjectMapImplementationTest#hashings")
+    void createsMapWithSpecifiedHashing(LongHashing hashing) {
+      assertThat(new RobinHoodLongObjectMap<String>(hashing)).isNotNull();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource(HASHING_METHOD_SOURCE)
+  void supportsSwissTableConstructors(LongHashing hashing) {
+    assertThat(new SwissTableLongObjectMap<String>()).isNotNull();
+    assertThat(new SwissTableLongObjectMap<String>(1)).isNotNull();
+    assertThat(new SwissTableLongObjectMap<String>(hashing)).isNotNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource(HASHING_METHOD_SOURCE)
+  void supportsOpenAddressMapConstructors(LongHashing hashing) {
+    @SuppressWarnings(
+        "unchecked") // Strategy constants are necessarily raw generic factory instances.
+    LongObjectOpenAddressingStrategy<String> swissTable =
+        LongObjectOpenAddressingStrategy.SWISS_TABLE;
+
+    assertThat(new LongObjectOpenAddressMap<String>()).isNotNull();
+    assertThat(new LongObjectOpenAddressMap<String>(1)).isNotNull();
+    assertThat(new LongObjectOpenAddressMap<String>(swissTable)).isNotNull();
+    assertThat(new LongObjectOpenAddressMap<String>(swissTable, 1)).isNotNull();
+    assertThat(new LongObjectOpenAddressMap<String>(swissTable, hashing)).isNotNull();
+  }
+
   @ParameterizedTest
   @MethodSource(MAP_IMPLEMENTATIONS)
   void matchesHashMapForRandomOperations(String name, IntFunction<LongObjectMap<String>> maps) {
@@ -175,36 +242,38 @@ class LongObjectMapImplementationTest {
         .flatMap(
             hashing ->
                 Stream.of(
-                    Arguments.of(
+                    mapImplementation(
                         "linear probing " + hashing,
-                        (IntFunction<LongObjectMap<String>>)
-                            expectedSize ->
-                                new LinearProbingLongObjectMap<>(expectedSize, hashing)),
-                    Arguments.of(
+                        expectedSize -> new LinearProbingLongObjectMap<>(expectedSize, hashing)),
+                    mapImplementation(
                         "robin hood " + hashing,
-                        (IntFunction<LongObjectMap<String>>)
-                            expectedSize -> new RobinHoodLongObjectMap<>(expectedSize, hashing)),
-                    Arguments.of(
+                        expectedSize -> new RobinHoodLongObjectMap<>(expectedSize, hashing)),
+                    mapImplementation(
                         "swiss table " + hashing,
-                        (IntFunction<LongObjectMap<String>>)
-                            expectedSize -> new SwissTableLongObjectMap<>(expectedSize, hashing)),
-                    Arguments.of(
+                        expectedSize -> new SwissTableLongObjectMap<>(expectedSize, hashing)),
+                    mapImplementation(
                         "open address linear probing " + hashing,
-                        (IntFunction<LongObjectMap<String>>)
-                            expectedSize ->
-                                new LongObjectOpenAddressMap<>(
-                                    LinearProbingLongObjectMap::new, expectedSize, hashing)),
-                    Arguments.of(
+                        expectedSize ->
+                            new LongObjectOpenAddressMap<>(
+                                LinearProbingLongObjectMap::new, expectedSize, hashing)),
+                    mapImplementation(
                         "open address robin hood " + hashing,
-                        (IntFunction<LongObjectMap<String>>)
-                            expectedSize ->
-                                new LongObjectOpenAddressMap<>(
-                                    RobinHoodLongObjectMap::new, expectedSize, hashing)),
-                    Arguments.of(
+                        expectedSize ->
+                            new LongObjectOpenAddressMap<>(
+                                RobinHoodLongObjectMap::new, expectedSize, hashing)),
+                    mapImplementation(
                         "open address swiss table " + hashing,
-                        (IntFunction<LongObjectMap<String>>)
-                            expectedSize ->
-                                new LongObjectOpenAddressMap<>(
-                                    SwissTableLongObjectMap::new, expectedSize, hashing))));
+                        expectedSize ->
+                            new LongObjectOpenAddressMap<>(
+                                SwissTableLongObjectMap::new, expectedSize, hashing))));
+  }
+
+  private static Arguments mapImplementation(
+      String name, IntFunction<LongObjectMap<String>> factory) {
+    return Arguments.of(name, factory);
+  }
+
+  private static Stream<LongHashing> hashings() {
+    return Arrays.stream(LongHashing.values());
   }
 }

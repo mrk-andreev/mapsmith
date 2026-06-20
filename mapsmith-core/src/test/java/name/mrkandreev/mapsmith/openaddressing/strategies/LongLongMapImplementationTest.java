@@ -12,13 +12,17 @@ import java.util.stream.Stream;
 import name.mrkandreev.mapsmith.LongLongMap;
 import name.mrkandreev.mapsmith.openaddressing.LongHashing;
 import name.mrkandreev.mapsmith.openaddressing.LongLongOpenAddressMap;
+import name.mrkandreev.mapsmith.openaddressing.LongLongOpenAddressingStrategy;
 import name.mrkandreev.mapsmith.ranking.OrderStatisticLongLongMap;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class LongLongMapImplementationTest {
   private static final String MAP_IMPLEMENTATIONS = "mapImplementations";
+  private static final String HASHING_METHOD_SOURCE = "hashings";
 
   @ParameterizedTest
   @MethodSource(MAP_IMPLEMENTATIONS)
@@ -167,6 +171,74 @@ class LongLongMapImplementationTest {
 
   @ParameterizedTest
   @MethodSource(MAP_IMPLEMENTATIONS)
+  void supportsZeroExpectedSize(String name, IntFunction<LongLongMap> maps) {
+    LongLongMap map = maps.apply(0);
+
+    assertThat(map.put(1L, 1L)).as(name).isZero();
+  }
+
+  @Nested
+  class LinearProbingConstructors {
+    @Test
+    void createsMapWithDefaultExpectedSize() {
+      assertThat(new LinearProbingLongLongMap()).isNotNull();
+    }
+
+    @Test
+    void createsMapWithSpecifiedExpectedSize() {
+      assertThat(new LinearProbingLongLongMap(1)).isNotNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource(
+        "name.mrkandreev.mapsmith.openaddressing.strategies.LongLongMapImplementationTest#hashings")
+    void createsMapWithSpecifiedHashing(LongHashing hashing) {
+      assertThat(new LinearProbingLongLongMap(hashing)).isNotNull();
+    }
+  }
+
+  @Nested
+  class RobinHoodConstructors {
+    @Test
+    void createsMapWithDefaultExpectedSize() {
+      assertThat(new RobinHoodLongLongMap()).isNotNull();
+    }
+
+    @Test
+    void createsMapWithSpecifiedExpectedSize() {
+      assertThat(new RobinHoodLongLongMap(1)).isNotNull();
+    }
+
+    @ParameterizedTest
+    @MethodSource(
+        "name.mrkandreev.mapsmith.openaddressing.strategies.LongLongMapImplementationTest#hashings")
+    void createsMapWithSpecifiedHashing(LongHashing hashing) {
+      assertThat(new RobinHoodLongLongMap(hashing)).isNotNull();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource(HASHING_METHOD_SOURCE)
+  void supportsSwissTableConstructors(LongHashing hashing) {
+    assertThat(new SwissTableLongLongMap()).isNotNull();
+    assertThat(new SwissTableLongLongMap(1)).isNotNull();
+    assertThat(new SwissTableLongLongMap(hashing)).isNotNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource(HASHING_METHOD_SOURCE)
+  void supportsOpenAddressMapConstructors(LongHashing hashing) {
+    assertThat(new LongLongOpenAddressMap()).isNotNull();
+    assertThat(new LongLongOpenAddressMap(1)).isNotNull();
+    assertThat(new LongLongOpenAddressMap(LongLongOpenAddressingStrategy.SWISS_TABLE)).isNotNull();
+    assertThat(new LongLongOpenAddressMap(LongLongOpenAddressingStrategy.SWISS_TABLE, 1))
+        .isNotNull();
+    assertThat(new LongLongOpenAddressMap(LongLongOpenAddressingStrategy.SWISS_TABLE, hashing))
+        .isNotNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource(MAP_IMPLEMENTATIONS)
   void matchesHashMapForRandomOperations(String name, IntFunction<LongLongMap> maps) {
     LongLongMap map = maps.apply(1);
     Map<Long, Long> expected = new HashMap<>();
@@ -239,5 +311,9 @@ class LongLongMapImplementationTest {
                     Arguments.of(
                         "order statistic " + hashing,
                         (IntFunction<LongLongMap>) OrderStatisticLongLongMap::new)));
+  }
+
+  private static Stream<LongHashing> hashings() {
+    return Arrays.stream(LongHashing.values());
   }
 }

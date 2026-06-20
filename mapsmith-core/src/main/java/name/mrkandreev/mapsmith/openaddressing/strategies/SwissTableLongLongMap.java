@@ -5,6 +5,7 @@ import java.util.Objects;
 import name.mrkandreev.mapsmith.LongLongMap;
 import name.mrkandreev.mapsmith.openaddressing.LongHashing;
 
+/** A primitive long-to-long map using Swiss-table hashing. */
 public final class SwissTableLongLongMap implements LongLongMap {
   private static final byte EMPTY = 0;
   private static final byte DELETED = 1;
@@ -18,18 +19,35 @@ public final class SwissTableLongLongMap implements LongLongMap {
   private int used;
   private final LongHashing hashing;
 
+  /** Creates a map with default capacity and hashing. */
   public SwissTableLongLongMap() {
     this(LongLongHashSupport.DEFAULT_EXPECTED_SIZE);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   */
   public SwissTableLongLongMap(int expectedSize) {
     this(expectedSize, LongHashing.MURMUR3_FINALIZER);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param hashing hash function
+   */
   public SwissTableLongLongMap(LongHashing hashing) {
     this(LongLongHashSupport.DEFAULT_EXPECTED_SIZE, hashing);
   }
 
+  /**
+   * Creates a map.
+   *
+   * @param expectedSize expected entry count
+   * @param hashing hash function
+   */
   public SwissTableLongLongMap(int expectedSize, LongHashing hashing) {
     this.hashing = Objects.requireNonNull(hashing, "hashing must not be null");
     allocate(LongLongHashSupport.capacityFor(expectedSize));
