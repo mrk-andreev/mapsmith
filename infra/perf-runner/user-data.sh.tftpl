@@ -10,7 +10,7 @@ id -u runner >/dev/null 2>&1 || useradd --create-home --shell /bin/bash runner
 install -d -o runner -g runner /opt/actions-runner
 cd /opt/actions-runner
 
-runner_version="$$(curl --fail --silent --show-error --location \
+runner_version="$(curl --fail --silent --show-error --location \
   https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name')"
 curl --fail --silent --show-error --location \
   --output actions-runner.tar.gz \
@@ -23,7 +23,7 @@ chown -R runner:runner /opt/actions-runner
 runuser -u runner -- ./config.sh --unattended \
   --url "https://github.com/${repository}" \
   --token '${runner_token}' \
-  --name "$$(hostname)" \
+  --name "$(hostname)" \
   --labels "mapsmith-perf" \
   --replace
 
