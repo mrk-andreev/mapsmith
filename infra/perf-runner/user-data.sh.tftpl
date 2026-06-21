@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates curl git jq openjdk-21-jdk-headless
+
+id -u runner >/dev/null 2>&1 || useradd --create-home --shell /bin/bash runner
+
+install -d -o runner -g runner /opt/actions-runner
+cd /opt/actions-runner
+
+runner_version="$$(curl --fail --silent --show-error --location \
+  https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name')"
+curl --fail --silent --show-error --location \
+  --output actions-runner.tar.gz \
+  "https://github.com/actions/runner/releases/download/$${runner_version}/actions-runner-linux-x64-$${runner_version#v}.tar.gz"
+tar xzf actions-runner.tar.gz
+rm actions-runner.tar.gz
+chown -R runner:runner /opt/actions-runner
+./bin/installdependencies.sh
+
+runuser -u runner -- ./config.sh --unattended \
+  --url "https://github.com/${repository}" \
+  --token '${runner_token}' \
+  --name "$$(hostname)" \
+  --labels "mapsmith-perf" \
+  --replace
+
+./svc.sh install runner
+./svc.sh start

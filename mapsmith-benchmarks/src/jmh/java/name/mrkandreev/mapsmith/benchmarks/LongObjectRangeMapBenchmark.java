@@ -18,6 +18,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.RunnerException;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -26,6 +27,10 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(2)
 @Threads(1)
 public class LongObjectRangeMapBenchmark {
+  public static void main(String[] args) throws RunnerException {
+    BenchmarkRunner.run(LongObjectRangeMapBenchmark.class, args);
+  }
+
   private static final long RANGE_WIDTH = 16L;
   private static final long RANGE_STRIDE = 32L;
 

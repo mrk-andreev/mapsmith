@@ -21,6 +21,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.RunnerException;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -28,6 +29,10 @@ import org.openjdk.jmh.infra.Blackhole;
 @Measurement(iterations = 5, time = 1)
 @Fork(2)
 public class LongLongMapBenchmark {
+  public static void main(String[] args) throws RunnerException {
+    BenchmarkRunner.run(LongLongMapBenchmark.class, args);
+  }
+
   @Benchmark
   public void getExisting(PopulatedMaps maps, Blackhole blackhole) {
     blackhole.consume(getExisting(maps.map, maps.lookupKeys));
