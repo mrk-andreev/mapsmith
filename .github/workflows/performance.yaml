@@ -1,0 +1,30 @@
+name: Manual Performance Benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark:
+        description: "JMH benchmark regex"
+        required: true
+        default: ".*"
+
+jobs:
+  jmh:
+    runs-on:
+      - self-hosted
+      - mapsmith-perf
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run JMH
+        run: |
+          mkdir -p mapsmith-benchmarks/build/benchmarks
+          ./gradlew :mapsmith-benchmarks:jmh \
+            --args="${{ inputs.benchmark }} -rf json -rff $GITHUB_WORKSPACE/mapsmith-benchmarks/build/benchmarks/jmh-results.json"
+
+      - name: Upload JMH results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmh-results
+          path: mapsmith-benchmarks/build/benchmarks/jmh-results.json

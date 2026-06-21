@@ -19,6 +19,7 @@ dependencies {
 
   add(jmh.implementationConfigurationName, project(":mapsmith-core"))
   add(jmh.implementationConfigurationName, libs.jmh.core)
+  add(jmh.implementationConfigurationName, libs.picocli)
   add(jmh.annotationProcessorConfigurationName, libs.jmh.generator.annprocess)
 }
 
